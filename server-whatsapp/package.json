@@ -1,0 +1,36 @@
+{
+  "name": "server-whatsapp",
+  "version": "1.0.0",
+  "description": "WhatsApp WA Gateway Multi-Session Server - E-Rapor Digital TK Masyithoh",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "start:dev": "ts-node -r tsconfig-paths/register src/server.ts",
+    "start:watch": "nodemon --watch src --ext ts --exec ts-node -r tsconfig-paths/register src/server.ts",
+    "test": "ts-node -r tsconfig-paths/register test/routes.test.ts",
+    "test:live": "ts-node -r tsconfig-paths/register test/live_send.test.ts"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.18",
+    "axios": "^1.7.9",
+    "bullmq": "^5.52.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "ioredis": "^5.5.0",
+    "multer": "^1.4.5-lts.1",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.13.4",
+    "@types/qrcode": "^1.5.5",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3"
+  }
+}

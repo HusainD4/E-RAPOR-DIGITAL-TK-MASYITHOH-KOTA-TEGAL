@@ -1,0 +1,402 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMINISTRATOR
+  HEADMASTER
+  TEACHER
+  STUDENT
+  INSTITUTE
+}
+
+enum GenderEnum {
+  L
+  P
+}
+
+enum SemesterEnum {
+  SEM_01 @map("01")
+  SEM_02 @map("02")
+  GANJIL @map("Ganjil")
+  GENAP  @map("Genap")
+}
+
+enum PpdbStatusEnum {
+  PENDING
+  VERIFIED
+  ACCEPTED
+  REJECTED
+}
+
+enum AttendanceStatusEnum {
+  HADIR
+  SAKIT
+  IZIN
+  ALPA
+}
+
+enum AssessmentScoreEnum {
+  BB
+  MB
+  BSH
+  BSB
+}
+
+enum ReportStatusEnum {
+  DRAFT
+  PENDING_VALIDATION
+  APPROVED
+  DISTRIBUTED
+}
+
+enum WaDeliveryStatusEnum {
+  QUEUED
+  PROCESSING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  username     String   @unique @db.VarChar(50)
+  email        String?  @unique @db.VarChar(100)
+  phoneNumber  String   @map("phone_number") @db.VarChar(20)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  refreshToken String?  @map("refresh_token") @db.Text
+  role         Role
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  schoolsHeadmaster     School[]           @relation("SchoolHeadmaster")
+  classesTeacher        Class[]            @relation("ClassTeacher")
+  studentsParent        Student[]          @relation("StudentParentUser")
+  ppdbVerified          PpdbRegistration[] @relation("PpdbVerifier")
+  anecdotesTeacher      AnecdotalRecord[]  @relation("AnecdoteTeacher")
+  reportCardsValidated  ReportCard[]       @relation("ReportValidator")
+  auditLogs             AuditLog[]         @relation("AuditUser")
+  whitelistsCreated      ApiWhitelist[]     @relation("WhitelistCreator")
+  activityPhotosUploaded ActivityPhoto[]    @relation("ActivityPhotoUploader")
+
+  @@index([role], map: "idx_user_role")
+  @@index([phoneNumber], map: "idx_user_phone")
+  @@map("users")
+}
+
+model Foundation {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  name        String   @db.VarChar(150)
+  legalNumber String?  @map("legal_number") @db.VarChar(100)
+  npwp        String?  @db.VarChar(50)
+  address     String?  @db.Text
+  logoUrl     String?  @map("logo_url") @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  schools School[]
+
+  @@map("foundation")
+}
+
+model School {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  foundationId String   @map("foundation_id") @db.VarChar(36)
+  npsn         String?  @unique @db.VarChar(20)
+  name         String   @db.VarChar(150)
+  address      String   @db.Text
+  phoneNumber  String?  @map("phone_number") @db.VarChar(20)
+  headmasterId String?  @map("headmaster_id") @db.VarChar(36)
+  logoUrl      String?  @map("logo_url") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  foundation        Foundation         @relation(fields: [foundationId], references: [id], onDelete: Cascade)
+  headmaster        User?              @relation("SchoolHeadmaster", fields: [headmasterId], references: [id], onDelete: SetNull)
+  classes           Class[]
+  students          Student[]
+  ppdbRegistrations PpdbRegistration[]
+  auditLogs         AuditLog[]
+  activityPhotos    ActivityPhoto[]
+
+  @@map("schools")
+}
+
+model Class {
+  id           String       @id @default(uuid()) @db.VarChar(36)
+  schoolId     String       @map("school_id") @db.VarChar(36)
+  teacherId    String?      @map("teacher_id") @db.VarChar(36)
+  name         String       @db.VarChar(50)
+  level        String       @db.VarChar(20)
+  capacity     Int          @default(20)
+  academicYear String       @map("academic_year") @db.VarChar(20)
+  semester     SemesterEnum
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  school            School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacher           User?              @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  students          Student[]
+  ppdbRegistrations PpdbRegistration[]
+  dailyAttendances  DailyAttendance[]
+  reportCards       ReportCard[]
+  activityPhotos    ActivityPhoto[]
+
+  @@index([academicYear, semester], map: "idx_classes_period")
+  @@map("classes")
+}
+
+model Student {
+  id                   String     @id @default(uuid()) @db.VarChar(36)
+  schoolId             String     @map("school_id") @db.VarChar(36)
+  classId              String?    @map("class_id") @db.VarChar(36)
+  userId               String?    @map("user_id") @db.VarChar(36)
+  nisn                 String?    @db.VarChar(20)
+  nis                  String?    @db.VarChar(20)
+  nik                  String     @unique @db.VarChar(16)
+  fullName             String     @map("full_name") @db.VarChar(150)
+  nickname             String?    @db.VarChar(50)
+  gender               GenderEnum
+  birthPlace           String     @map("birth_place") @db.VarChar(100)
+  birthDate            DateTime   @map("birth_date") @db.Date
+  religion             String?    @default("Islam") @db.VarChar(30)
+  childOrder           Int?       @map("child_order")
+  address              String     @db.Text
+  fatherName           String     @map("father_name") @db.VarChar(150)
+  fatherNik            String     @map("father_nik") @db.VarChar(16)
+  fatherEducation      String?    @map("father_education") @db.VarChar(30)
+  fatherJob            String?    @map("father_job") @db.VarChar(100)
+  fatherIncome         Decimal?   @map("father_income") @db.Decimal(12, 2)
+  motherName           String     @map("mother_name") @db.VarChar(150)
+  motherNik            String     @map("mother_nik") @db.VarChar(16)
+  motherEducation      String?    @map("mother_education") @db.VarChar(30)
+  motherJob            String?    @map("mother_job") @db.VarChar(100)
+  motherIncome         Decimal?   @map("mother_income") @db.Decimal(12, 2)
+  parentPhoneNumber    String     @map("parent_phone_number") @db.VarChar(20)
+  secondaryPhoneNumber String?    @map("secondary_phone_number") @db.VarChar(20)
+  heightCm             Decimal?   @map("height_cm") @db.Decimal(5, 2)
+  weightKg             Decimal?   @map("weight_kg") @db.Decimal(5, 2)
+  isActive             Boolean    @default(true) @map("is_active")
+  createdAt            DateTime   @default(now()) @map("created_at")
+
+  school            School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class             Class?             @relation(fields: [classId], references: [id], onDelete: SetNull)
+  user              User?              @relation("StudentParentUser", fields: [userId], references: [id], onDelete: SetNull)
+  ppdbRegistrations PpdbRegistration[]
+  dailyAttendances  DailyAttendance[]
+  anecdotes         AnecdotalRecord[]
+  assessments       Assessment[]
+  aswajaAssessments AswajaAssessment[]
+  reportCards       ReportCard[]
+  waDeliveryLogs    WaDeliveryLog[]
+
+  @@index([fullName], map: "idx_student_name")
+  @@index([parentPhoneNumber], map: "idx_student_parent_phone")
+  @@map("students")
+}
+
+model PpdbRegistration {
+  id                  String         @id @default(uuid()) @db.VarChar(36)
+  schoolId            String         @map("school_id") @db.VarChar(36)
+  registrationNumber  String         @unique @map("registration_number") @db.VarChar(50)
+  academicYear        String         @map("academic_year") @db.VarChar(20)
+  targetLevel         String         @map("target_level") @db.VarChar(20)
+  assignedClassId     String?        @map("assigned_class_id") @db.VarChar(36)
+  studentId           String?        @map("student_id") @db.VarChar(36)
+  studentPayload      Json           @map("student_payload")
+  birthCertificateUrl String         @map("birth_certificate_url") @db.Text
+  familyCardUrl       String         @map("family_card_url") @db.Text
+  parentKtpUrl        String         @map("parent_ktp_url") @db.Text
+  status              PpdbStatusEnum @default(PENDING)
+  verifierId          String?        @map("verifier_id") @db.VarChar(36)
+  verifiedAt          DateTime?      @map("verified_at")
+  createdAt           DateTime       @default(now()) @map("created_at")
+
+  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  assignedClass Class?   @relation(fields: [assignedClassId], references: [id], onDelete: SetNull)
+  student       Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  verifier      User?    @relation("PpdbVerifier", fields: [verifierId], references: [id], onDelete: SetNull)
+
+  @@index([status, academicYear], map: "idx_ppdb_status")
+  @@map("ppdb_registrations")
+}
+
+model DailyAttendance {
+  id        String               @id @default(uuid()) @db.VarChar(36)
+  studentId String               @map("student_id") @db.VarChar(36)
+  classId   String               @map("class_id") @db.VarChar(36)
+  date      DateTime             @db.Date
+  status    AttendanceStatusEnum
+  notes     String?              @db.Text
+  createdAt DateTime             @default(now()) @map("created_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date], map: "uq_student_date")
+  @@map("daily_attendances")
+}
+
+model AnecdotalRecord {
+  id                     String   @id @default(uuid()) @db.VarChar(36)
+  studentId              String   @map("student_id") @db.VarChar(36)
+  teacherId              String   @map("teacher_id") @db.VarChar(36)
+  date                   DateTime @db.Date
+  eventContext           String   @map("event_context") @db.Text
+  observedBehavior       String   @map("observed_behavior") @db.Text
+  analysisInterpretation String?  @map("analysis_interpretation") @db.Text
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher User    @relation("AnecdoteTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@map("anecdotal_records")
+}
+
+model Assessment {
+  id           String              @id @default(uuid()) @db.VarChar(36)
+  studentId    String              @map("student_id") @db.VarChar(36)
+  semester     String              @db.VarChar(10)
+  academicYear String              @map("academic_year") @db.VarChar(20)
+  aspect       String              @db.VarChar(50)
+  score        AssessmentScoreEnum
+  teacherNotes String?             @map("teacher_notes") @db.Text
+  createdAt    DateTime            @default(now()) @map("created_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, academicYear, semester], map: "idx_assessment_period")
+  @@map("assessments")
+}
+
+model ReportCard {
+  id                   String           @id @default(uuid()) @db.VarChar(36)
+  studentId            String           @map("student_id") @db.VarChar(36)
+  classId              String           @map("class_id") @db.VarChar(36)
+  semester             String           @db.VarChar(10)
+  academicYear         String           @map("academic_year") @db.VarChar(20)
+  aiGeneratedNarrative String?          @map("ai_generated_narrative") @db.Text
+  finalTeacherNarrative String?         @map("final_teacher_narrative") @db.Text
+  status               ReportStatusEnum @default(DRAFT)
+  validatedBy          String?          @map("validated_by") @db.VarChar(36)
+  validatedAt          DateTime?        @map("validated_at")
+  digitalSignatureHash String?          @map("digital_signature_hash") @db.VarChar(255)
+  pdfFilename          String?          @map("pdf_filename") @db.VarChar(255)
+  pdfFileUrl           String?          @map("pdf_file_url") @db.Text
+  createdAt            DateTime         @default(now()) @map("created_at")
+
+  student        Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class          Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  validator      User?           @relation("ReportValidator", fields: [validatedBy], references: [id], onDelete: SetNull)
+  waDeliveryLogs WaDeliveryLog[]
+  activityPhotos ActivityPhoto[]
+
+  @@index([studentId, academicYear, semester], map: "idx_report_student_period")
+  @@map("report_cards")
+}
+
+model WaDeliveryLog {
+  id             String               @id @default(uuid()) @db.VarChar(36)
+  reportCardId   String               @map("report_card_id") @db.VarChar(36)
+  studentId      String               @map("student_id") @db.VarChar(36)
+  academicYear   String               @map("academic_year") @db.VarChar(20)
+  semester       String               @db.VarChar(10)
+  recipientPhone String               @map("recipient_phone") @db.VarChar(20)
+  pdfFilename    String               @map("pdf_filename") @db.VarChar(255)
+  deliveryStatus WaDeliveryStatusEnum @default(QUEUED) @map("delivery_status")
+  errorMessage   String?              @map("error_message") @db.Text
+  sentAt         DateTime?            @map("sent_at")
+  createdAt      DateTime             @default(now()) @map("created_at")
+
+  reportCard ReportCard @relation(fields: [reportCardId], references: [id], onDelete: Cascade)
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([academicYear, semester, deliveryStatus], map: "idx_wa_delivery_period")
+  @@map("wa_delivery_logs")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String?  @map("user_id") @db.VarChar(36)
+  role      String   @db.VarChar(30)
+  schoolId  String?  @map("school_id") @db.VarChar(36)
+  action    String   @db.VarChar(100)
+  resource  String   @db.VarChar(100)
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   User?   @relation("AuditUser", fields: [userId], references: [id], onDelete: SetNull)
+  school School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model ApiWhitelist {
+  id             String   @id @default(uuid()) @db.VarChar(36)
+  label          String   @db.VarChar(100)
+  ipOrCidr       String?  @map("ip_or_cidr") @db.VarChar(50)
+  domainOrOrigin String?  @map("domain_or_origin") @db.VarChar(150)
+  port           Int?
+  isActive       Boolean  @default(true) @map("is_active")
+  createdBy      String?  @map("created_by") @db.VarChar(36)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  creator User? @relation("WhitelistCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@map("api_whitelists")
+}
+
+enum AswajaAspectEnum {
+  Hafalan_Doa_Harian
+  Hafalan_Surat_Pendek
+  Sholawat_Nahdliyyah
+  Praktik_Ibadah_NU
+}
+
+model AswajaAssessment {
+  id           String              @id @default(uuid()) @db.VarChar(36)
+  studentId    String              @map("student_id") @db.VarChar(36)
+  semester     String              @db.VarChar(10)
+  academicYear String              @map("academic_year") @db.VarChar(20)
+  aspect       AswajaAspectEnum
+  score        AssessmentScoreEnum
+  teacherNotes String?             @map("teacher_notes") @db.Text
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, semester, academicYear, aspect], map: "uq_aswaja_aspect")
+  @@map("aswaja_assessments")
+}
+
+model ActivityPhoto {
+  id               String      @id @default(uuid()) @db.VarChar(36)
+  classId          String      @map("class_id") @db.VarChar(36)
+  schoolId         String      @map("school_id") @db.VarChar(36)
+  uploadedByUserId String      @map("uploaded_by_user_id") @db.VarChar(36)
+  activityDate     DateTime    @map("activity_date") @db.Date
+  caption          String?     @db.VarChar(255)
+  fileUrl          String      @map("file_url") @db.Text
+  taggedStudentIds Json?       @map("tagged_student_ids")
+  isUsedInRapor    Boolean     @default(false) @map("is_used_in_rapor")
+  usedInReportId   String?     @map("used_in_report_id") @db.VarChar(36)
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  class      Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school     School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  uploader   User        @relation("ActivityPhotoUploader", fields: [uploadedByUserId], references: [id], onDelete: Cascade)
+  reportCard ReportCard? @relation(fields: [usedInReportId], references: [id], onDelete: SetNull)
+
+  @@index([classId, activityDate], map: "idx_photo_class_date")
+  @@index([classId, isUsedInRapor], map: "idx_photo_staging")
+  @@map("activity_photos")
+}
+

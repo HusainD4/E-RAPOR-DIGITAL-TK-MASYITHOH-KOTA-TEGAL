@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Laporan Capaian Perkembangan Anak Usia Dini - TK Masyithoh Kota Tegal</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm;
+    }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 12pt;
+      line-height: 1.5;
+      color: #000;
+      margin: 0;
+      padding: 0;
+    }
+    .header-table {
+      width: 100%;
+      border-bottom: 3px double #000;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    .header-table td {
+      vertical-align: middle;
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+    .kop-text {
+      text-align: center;
+    }
+    .kop-text h2 {
+      margin: 0;
+      font-size: 14pt;
+      text-transform: uppercase;
+    }
+    .kop-text h1 {
+      margin: 0;
+      font-size: 16pt;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .kop-text p {
+      margin: 2px 0 0;
+      font-size: 10pt;
+    }
+    .title-section {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .title-section h3 {
+      margin: 0;
+      font-size: 13pt;
+      text-decoration: underline;
+    }
+    .info-table {
+      width: 100%;
+      margin-bottom: 20px;
+      font-size: 11pt;
+    }
+    .info-table td {
+      padding: 3px 0;
+    }
+    .aspect-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    .aspect-table th, .aspect-table td {
+      border: 1px solid #000;
+      padding: 8px;
+      text-align: left;
+    }
+    .aspect-table th {
+      background-color: #f2f2f2;
+      text-align: center;
+    }
+    .narrative-box {
+      border: 1px solid #000;
+      padding: 12px;
+      margin-bottom: 25px;
+      text-align: justify;
+    }
+    .signature-table {
+      width: 100%;
+      margin-top: 30px;
+      page-break-inside: avoid;
+    }
+    .signature-table td {
+      text-align: center;
+      width: 33%;
+      vertical-align: top;
+    }
+    .qr-box {
+      margin: 10px auto;
+      width: 70px;
+      height: 70px;
+      border: 1px dashed #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8pt;
+      color: #666;
+    }
+    .digital-seal {
+      font-size: 8pt;
+      color: #2e7d32;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- KOP SURAT RESMI -->
+  <table class="header-table">
+    <tr>
+      <td style="width: 90px; text-align: center;">
+        <img src="{{logoUrl}}" class="logo" alt="Logo Yayasan">
+      </td>
+      <td class="kop-text">
+        <h2>YAYASAN PENDIDIKAN MUSLIMAT NU KOTA TEGAL</h2>
+        <h1>{{schoolName}}</h1>
+        <p>{{schoolAddress}} | NPSN: {{schoolNpsn}} | Telp: {{schoolPhone}}</p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- JUDUL DOKUMEN -->
+  <div class="title-section">
+    <h3>LAPORAN CAPAIAN PERKEMBANGAN ANAK DIDIK</h3>
+    <div style="font-size: 11pt; margin-top: 4px;">Tahun Ajaran: {{academicYear}} / Semester: {{semester}}</div>
+  </div>
+
+  <!-- BIODATA SINGKAT SISWA -->
+  <table class="info-table">
+    <tr>
+      <td style="width: 20%;">Nama Lengkap</td>
+      <td style="width: 30%;">: <strong>{{studentFullName}}</strong></td>
+      <td style="width: 20%;">Rombel / Kelompok</td>
+      <td style="width: 30%;">: {{className}} ({{classLevel}})</td>
+    </tr>
+    <tr>
+      <td>Nomor Induk / NISN</td>
+      <td>: {{nis}} / {{nisn}}</td>
+      <td>Wali Kelas</td>
+      <td>: {{teacherName}}</td>
+    </tr>
+  </table>
+
+  <!-- TABEL CAPAIAN 6 ASPEK -->
+  <table class="aspect-table">
+    <thead>
+      <tr>
+        <th style="width: 5%;">No</th>
+        <th style="width: 35%;">Aspek Perkembangan PAUD</th>
+        <th style="width: 15%;">Capaian</th>
+        <th style="width: 45%;">Catatan Perkembangan</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each assessments}}
+      <tr>
+        <td style="text-align: center;">{{@index_1}}</td>
+        <td><strong>{{aspect}}</strong></td>
+        <td style="text-align: center; font-weight: bold;">{{score}}</td>
+        <td>{{teacherNotes}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+  <!-- NARASI PERKEMBANGAN TERPADU -->
+  <h4 style="margin-bottom: 6px;">Deskripsi Narasi Perkembangan (Rangkuman Asuhan Pendidik):</h4>
+  <div class="narrative-box">
+    {{finalTeacherNarrative}}
+  </div>
+
+  <!-- PENGESAHAN & TANDA TANGAN DIGITAL RESMI -->
+  <table class="signature-table">
+    <tr>
+      <td>
+        Mengetahui,<br>Orang Tua / Wali Murid<br><br><br><br>
+        <strong>( ........................................ )</strong>
+      </td>
+      <td>
+        Kota Tegal, {{reportDate}}<br>Guru Wali Kelas<br><br><br><br>
+        <strong><u>{{teacherName}}</u></strong>
+      </td>
+      <td>
+        Kepala Sekolah<br>
+        <div class="qr-box">VALIDATED<br>DIGITAL</div>
+        <span class="digital-seal">Hash: {{digitalSignatureHash}}</span><br>
+        <strong><u>{{headmasterName}}</u></strong>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
